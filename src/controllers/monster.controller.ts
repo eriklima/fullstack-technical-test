@@ -7,8 +7,25 @@ import { readFileSync } from 'fs';
 
 export const get = async (req: Request, res: Response): Promise<Response> => {
   const id: Id = req.params.id;
-  const monster = await Monster.query().findById(id);
+  const monster = await getById(id);
+
+  if (!monster) {
+    return res.status(StatusCodes.NOT_FOUND).json();
+  }
+
   return res.status(StatusCodes.OK).json(monster);
+};
+
+export async function getById(id: string) {
+  return await Monster.query().findById(id);
+}
+
+export const getAll = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  const monsters = await Monster.query();
+  return res.status(StatusCodes.OK).json(monsters);
 };
 
 export const create = async (
@@ -24,6 +41,12 @@ export const update = async (
   res: Response
 ): Promise<Response> => {
   const id: Id = req.params.id;
+  const monster = await getById(id);
+
+  if (!monster) {
+    return res.status(StatusCodes.NOT_FOUND).json();
+  }
+
   await Monster.query().findById(id).patch(req.body);
   return res.sendStatus(StatusCodes.OK);
 };
@@ -33,6 +56,12 @@ export const remove = async (
   res: Response
 ): Promise<Response> => {
   const id: Id = req.params.id;
+  const monster = await getById(id);
+
+  if (!monster) {
+    return res.status(StatusCodes.NOT_FOUND).json();
+  }
+
   await Monster.query().deleteById(id);
   return res.sendStatus(StatusCodes.NO_CONTENT);
 };
@@ -42,7 +71,7 @@ export const importCsv = async (
   res: Response
 ): Promise<Response> => {
   const content = readFileSync(req.file!.path, { encoding: 'utf-8' });
-  const data = await csv().fromString(content);
+  const data = await csv({ checkType: true }).fromString(content);
   try {
     await Monster.query().insertGraph(data);
   } catch (e) {
@@ -56,8 +85,10 @@ export const importCsv = async (
 
 export const MonsterController = {
   get,
+  getAll,
   create,
   update,
   remove,
   importCsv,
+  getById,
 };
